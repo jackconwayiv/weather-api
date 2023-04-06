@@ -10,15 +10,12 @@ const config = {
 router.get("", async (req, res, next) => {
   try {
     let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    console.log("========", ip);
-    console.log(req.socket.remoteAddress);
     if (ip === "::1") {
       ip = process.env.LOCAL_IP;
     }
-    const ipApi = await axios.get(`http://ip-api.com/json/`); //https://ip-api.com/docs/api:json
+    const ipApi = await axios.get(`http://ip-api.com/json/${ip}`); //https://ip-api.com/docs/api:json
     const lat = ipApi.data.lat;
     const lon = ipApi.data.lon;
-    console.log("lat: ", lat, " lon: ", lon);
     const stationResponse = await axios.get(
       `https://api.weather.gov/points/${lat},${lon}`,
       config,
@@ -27,7 +24,6 @@ router.get("", async (req, res, next) => {
     const gridId = grid.gridId; //may need cwa instead of gridId
     const gridX = grid.gridX;
     const gridY = grid.gridY;
-    console.log(grid.timeZone);
     const city = grid.relativeLocation.properties.city;
     const state = grid.relativeLocation.properties.state;
 
@@ -37,7 +33,6 @@ router.get("", async (req, res, next) => {
       )},${parseInt(gridY)}/forecast`,
       config,
     );
-    console.log(`second request done`);
     const weatherBundle = {
       city: city,
       state: state,
@@ -49,6 +44,43 @@ router.get("", async (req, res, next) => {
   }
 });
 
+// router.get("/:ip", async (req, res, next) => {
+//   try {
+//     let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+//     if (ip === "::1") {
+//       ip = process.env.LOCAL_IP;
+//     }
+//     const ipApi = await axios.get(`http://ip-api.com/json/${ip}`); //https://ip-api.com/docs/api:json
+//     const lat = ipApi.data.lat;
+//     const lon = ipApi.data.lon;
+//     const stationResponse = await axios.get(
+//       `https://api.weather.gov/points/${lat},${lon}`,
+//       config,
+//     );
+//     const grid = stationResponse.data.properties;
+//     const gridId = grid.gridId; //may need cwa instead of gridId
+//     const gridX = grid.gridX;
+//     const gridY = grid.gridY;
+//     const city = grid.relativeLocation.properties.city;
+//     const state = grid.relativeLocation.properties.state;
+
+//     const forecast = await axios.get(
+//       `https://api.weather.gov/gridpoints/${gridId}/${parseInt(
+//         gridX,
+//       )},${parseInt(gridY)}/forecast`,
+//       config,
+//     );
+//     const weatherBundle = {
+//       city: city,
+//       state: state,
+//       forecast: forecast.data,
+//     };
+//     res.send(weatherBundle);
+//   } catch (error) {
+//     next(error);
+//   }
+// });
+
 router.get("/:latitude,:longitude", async (req, res, next) => {
   try {
     const stationResponse = await axios.get(
@@ -59,7 +91,6 @@ router.get("/:latitude,:longitude", async (req, res, next) => {
     const gridId = grid.gridId; //may need cwa instead of gridId
     const gridX = grid.gridX;
     const gridY = grid.gridY;
-    console.log(grid.timeZone);
     const city = grid.relativeLocation.properties.city;
     const state = grid.relativeLocation.properties.state;
 
@@ -69,7 +100,6 @@ router.get("/:latitude,:longitude", async (req, res, next) => {
       )},${parseInt(gridY)}/forecast`,
       config,
     );
-    console.log(`second request done`);
     const weatherBundle = {
       city: city,
       state: state,
