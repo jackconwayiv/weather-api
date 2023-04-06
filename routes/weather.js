@@ -7,7 +7,7 @@ const config = {
   },
 };
 
-router.get("", async (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
     let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
     if (ip === "::1") {
