@@ -7,6 +7,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use("/weather", require("./routes/weather"));
+app.use("/chat", require("./routes/chat"));
 
 app.get("/", (req, res) => {
   res.json("Welcome to the latest and greatest weather tracker.");
