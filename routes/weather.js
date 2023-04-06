@@ -7,84 +7,24 @@ const config = {
   },
 };
 
-router.get("/", async (req, res, next) => {
+//get lat and long by ip
+router.get("/ip/:ip", async (req, res, next) => {
   try {
-    let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    if (ip === "::1") {
-      ip = process.env.LOCAL_IP;
-    }
+    let ip = req.params.ip;
     const ipApi = await axios.get(`http://ip-api.com/json/${ip}`); //https://ip-api.com/docs/api:json
     const lat = ipApi.data.lat;
     const lon = ipApi.data.lon;
-    const stationResponse = await axios.get(
-      `https://api.weather.gov/points/${lat},${lon}`,
-      config,
-    );
-    const grid = stationResponse.data.properties;
-    const gridId = grid.gridId; //may need cwa instead of gridId
-    const gridX = grid.gridX;
-    const gridY = grid.gridY;
-    const city = grid.relativeLocation.properties.city;
-    const state = grid.relativeLocation.properties.state;
-
-    const forecast = await axios.get(
-      `https://api.weather.gov/gridpoints/${gridId}/${parseInt(
-        gridX,
-      )},${parseInt(gridY)}/forecast`,
-      config,
-    );
-    const weatherBundle = {
-      city: city,
-      state: state,
-      forecast: forecast.data,
-    };
-    res.send(weatherBundle);
+    res.send({ lat, lon });
   } catch (error) {
     next(error);
   }
 });
 
-// router.get("/:ip", async (req, res, next) => {
-//   try {
-//     let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-//     if (ip === "::1") {
-//       ip = process.env.LOCAL_IP;
-//     }
-//     const ipApi = await axios.get(`http://ip-api.com/json/${ip}`); //https://ip-api.com/docs/api:json
-//     const lat = ipApi.data.lat;
-//     const lon = ipApi.data.lon;
-//     const stationResponse = await axios.get(
-//       `https://api.weather.gov/points/${lat},${lon}`,
-//       config,
-//     );
-//     const grid = stationResponse.data.properties;
-//     const gridId = grid.gridId; //may need cwa instead of gridId
-//     const gridX = grid.gridX;
-//     const gridY = grid.gridY;
-//     const city = grid.relativeLocation.properties.city;
-//     const state = grid.relativeLocation.properties.state;
-
-//     const forecast = await axios.get(
-//       `https://api.weather.gov/gridpoints/${gridId}/${parseInt(
-//         gridX,
-//       )},${parseInt(gridY)}/forecast`,
-//       config,
-//     );
-//     const weatherBundle = {
-//       city: city,
-//       state: state,
-//       forecast: forecast.data,
-//     };
-//     res.send(weatherBundle);
-//   } catch (error) {
-//     next(error);
-//   }
-// });
-
-router.get("/:latitude,:longitude", async (req, res, next) => {
+//get stationGrid by lat and lon
+router.get("/ll/:lat,:lon", async (req, res, next) => {
   try {
     const stationResponse = await axios.get(
-      `https://api.weather.gov/points/${req.params.latitude},${req.params.longitude}`,
+      `https://api.weather.gov/points/${req.params.lat},${req.params.lon}`,
       config,
     );
     const grid = stationResponse.data.properties;
@@ -93,17 +33,29 @@ router.get("/:latitude,:longitude", async (req, res, next) => {
     const gridY = grid.gridY;
     const city = grid.relativeLocation.properties.city;
     const state = grid.relativeLocation.properties.state;
+    const stationBundle = {
+      city,
+      state,
+      grid,
+      gridId,
+      gridX,
+      gridY,
+    };
+    res.send(stationBundle);
+  } catch (error) {
+    next(error);
+  }
+});
 
-    const forecast = await axios.get(
-      `https://api.weather.gov/gridpoints/${gridId}/${parseInt(
-        gridX,
-      )},${parseInt(gridY)}/forecast`,
+//get weather by stationGrid (this can be handled using the link provided by station object)
+router.get("/:gridId/:gridX,:gridY", async (req, res, next) => {
+  try {
+    const response = await axios.get(
+      `https://api.weather.gov/gridpoints/${req.params.gridId}/${req.params.gridX},${req.params.gridY}/forecast`,
       config,
     );
     const weatherBundle = {
-      city: city,
-      state: state,
-      forecast: forecast.data,
+      forecast: response.data,
     };
     res.send(weatherBundle);
   } catch (error) {
